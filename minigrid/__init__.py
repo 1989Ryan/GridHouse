@@ -310,6 +310,11 @@ def register_minigrid_envs():
     # ----------------------------------------
 
     register(
+        id="MiniGrid-GridHouseEnv-v0",
+        entry_point="minigrid.envs:GridHouseEnv",
+    )
+
+    register(
         id="MiniGrid-LockedRoom-v0",
         entry_point="minigrid.envs:LockedRoomEnv",
     )

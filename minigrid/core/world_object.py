@@ -16,6 +16,7 @@ from minigrid.utils.rendering import (
     point_in_circle,
     point_in_line,
     point_in_rect,
+    point_in_half_circle,
 )
 
 if TYPE_CHECKING:
@@ -97,6 +98,12 @@ class WorldObj:
             v = Goal()
         elif obj_type == "lava":
             v = Lava()
+        elif obj_type == "cup":
+            v = Cup()
+        elif obj_type == "apple":
+            v = Apple()
+        elif obj_type == "t-shirt":
+            v = Tshirt()
         else:
             assert False, "unknown object type in decode '%s'" % obj_type
 
@@ -269,6 +276,60 @@ class Ball(WorldObj):
     def render(self, img):
         fill_coords(img, point_in_circle(0.5, 0.5, 0.31), COLORS[self.color])
 
+class Apple(WorldObj):
+    def __init__(self, color="red"):
+        super().__init__("apple", color)
+
+    def can_pickup(self):
+        return True
+
+    def render(self, img):
+        fill_coords(img, point_in_circle(0.39, 0.5, 0.2), COLORS[self.color])
+        fill_coords(img, point_in_circle(0.61, 0.5, 0.2), COLORS[self.color])
+        fill_coords(img, point_in_half_circle(0.5, 0.5, 0.31), COLORS[self.color])
+
+class Tshirt(WorldObj):
+    def __init__(self, color, contains: WorldObj | None = None):
+        super().__init__("t-shirt", color)
+        self.contains = contains
+
+    def can_pickup(self):
+        return True
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        # Outline
+        fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), c)
+        fill_coords(img, point_in_rect(0.12, 0.36, 0.38, 0.88), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.64, 0.88, 0.38, 0.88), (0, 0, 0))
+        fill_coords(img, point_in_half_circle(0.5, 0.12, 0.1), (0, 0, 0))
+
+    def toggle(self, env, pos):
+        # Replace the box by its contents
+        env.grid.set(pos[0], pos[1], self.contains)
+        return True
+
+class Cup(WorldObj):
+    def __init__(self, color, contains: WorldObj | None = None):
+        super().__init__("cup", color)
+        self.contains = contains
+
+    def can_pickup(self):
+        return True
+
+    def render(self, img):
+        c = COLORS[self.color]
+
+        # Outline
+        fill_coords(img, point_in_half_circle(0,7, 0.5, 0.2), c)
+        fill_coords(img, point_in_half_circle(0.7, 0.5, 0.1), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.30, 0.70, 0.12, 0.88), c)
+
+    def toggle(self, env, pos):
+        # Replace the box by its contents
+        env.grid.set(pos[0], pos[1], self.contains)
+        return True
 
 class Box(WorldObj):
     def __init__(self, color, contains: WorldObj | None = None):

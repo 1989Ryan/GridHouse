@@ -16,6 +16,33 @@ COLORS = {
 
 COLOR_NAMES = sorted(list(COLORS.keys()))
 
+ROOM_NAMES = sorted([
+    "bedroom", "bathroom", "kitchen", "living room"
+])
+
+ROOM_OBJS = {
+    "bedroom": ["t-shirt"],
+    "bathroom": [],
+    "kitchen": ["apple", "cup"],
+    "living room": [],
+}
+
+
+OBJNAMES = ["apple", "t-shirt", "cup"]
+
+OBJFUNC = {
+            "apple": "eat",
+            "t-shirt": "wear",
+            "cup": "drink",
+        }
+
+ROOM_NAMES_TO_COLORS = {
+    "bedroom": "red",
+    "bathroom": "blue",
+    "kitchen": "purple",
+    "living room": "green",
+}
+
 # Used to map colors to integers
 COLOR_TO_IDX = {"red": 0, "green": 1, "blue": 2, "purple": 3, "yellow": 4, "grey": 5}
 
@@ -34,6 +61,9 @@ OBJECT_TO_IDX = {
     "goal": 8,
     "lava": 9,
     "agent": 10,
+    "cup": 11,
+    "apple": 12,
+    "t-shirt": 13,
 }
 
 IDX_TO_OBJECT = dict(zip(OBJECT_TO_IDX.values(), OBJECT_TO_IDX.keys()))
