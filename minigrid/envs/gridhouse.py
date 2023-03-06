@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from minigrid.core.constants import COLOR_NAMES, ROOM_NAMES, \
-    ROOM_NAMES_TO_COLORS, ROOM_OBJS, OBJFUNC, OBJNAMES
+    ROOM_NAMES_TO_COLORS, ROOM_OBJS, OBJFUNC, OBJNAMES, OBJFUNCLIST
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Door, Goal, Cup, Apple, Tshirt, Wall
@@ -52,7 +52,7 @@ class GridHouseEnv(MiniGridEnv):
     | 2   | forward      | Move forward              |
     | 3   | pickup       | Pick up an object         |
     | 4   | drop         | Drop an object            |
-    | 5   | toggle       | Unused                    |
+    | 5   | toggle       | Open the door             |
     | 6   | done         | Unused                    |
 
     ## Observation Encoding
@@ -80,14 +80,14 @@ class GridHouseEnv(MiniGridEnv):
 
     """
 
-    def __init__(self, size=19, max_steps: int | None = None, **kwargs):
+    def __init__(self, size=15, max_steps: int | None = None, **kwargs):
         self.size = size
 
         if max_steps is None:
             max_steps = 10 * size
         mission_space = MissionSpace(
             mission_func=self._gen_mission,
-            ordered_placeholders=[OBJNAMES],
+            ordered_placeholders=[sorted(OBJFUNCLIST)],
         )
         super().__init__(
             mission_space=mission_space,
@@ -100,9 +100,9 @@ class GridHouseEnv(MiniGridEnv):
 
 
     @staticmethod
-    def _gen_mission(tar_obj: str):
+    def _gen_mission(obj_func: str):
         return (
-            f"get something to {OBJFUNC[tar_obj]}."
+            f"get something to {obj_func}."
         )
 
     def _gen_grid(self, width, height):
@@ -136,63 +136,55 @@ class GridHouseEnv(MiniGridEnv):
 
             roomW = lWallIdx + 1
             roomH = height // 2 + 1
-            self.rooms.append(LockedRoom((0, j), (roomW, roomH), (lWallIdx, j + 2)))
+            self.rooms.append(LockedRoom((0, j), (roomW, roomH), (lWallIdx, j + 3)))
             self.rooms.append(
-                LockedRoom((rWallIdx, j), (roomW, roomH), (rWallIdx, j + 2))
+                LockedRoom((rWallIdx, j), (roomW, roomH), (rWallIdx, j + 4))
             )
 
         # Choose one random room to be locked
-        lockedRoom = self._rand_elem(self.rooms)
-        # lockedRoom.locked = True
-
 
         # Assign the door colors
-        room_names = set(ROOM_NAMES)
+        room_names = sorted(ROOM_NAMES)
+        idx = 0
         for room in self.rooms:
-            room_name = self._rand_elem(sorted(room_names))
-            room_names.remove(room_name)
+            room_name = room_names[idx]
             room.name = room_name
             room.color = ROOM_NAMES_TO_COLORS[room_name]
             self.grid.set(*room.doorPos, Door(ROOM_NAMES_TO_COLORS[room_name]))
-
+            idx += 1 
         # Select a random room to contain the key
-        rn = random.uniform(0, 1)
         obj_list = ["apple", "t-shirt", "cup"]
         obj_rooms = {}
-        objposlist = {
-            "apple": None,
-            "t-shirt": None,
-            "cup": None,
-        }
 
         for obj_name in ["apple", "t-shirt", "cup"]:
             for room in self.rooms:
+                rn = random.uniform(0, 1)
                 if rn > 0.2:
-                    if obj_name in ROOM_OBJS['room'] and obj_name in obj_list:
+                    if obj_name in ROOM_OBJS[room.name] and obj_name in obj_list:
                         obj_rooms[obj_name] = room
+                        obj_list.remove(obj_name)
+                        continue
                 elif obj_name in obj_list:
                     obj_rooms[obj_name] = self._rand_elem(self.rooms)
-                obj_list.remove(obj_name)
+                    obj_list.remove(obj_name)
+                    continue
+        
         for obj_name in list(obj_rooms.keys()):
             ObjPos = obj_rooms[obj_name].rand_pos(self)
             if obj_name == "apple":
-                self.grid.set(*ObjPos, Apple(lockedRoom.color))
-            if obj_name == "t-shirt":
-                self.grid.set(*ObjPos, Tshirt(lockedRoom.color))
-            if obj_name == "cup":
-                self.grid.set(*ObjPos, Cup(lockedRoom.color))
-            objposlist[obj_name] = ObjPos
+                self.grid.set(*ObjPos, Apple("red"))
+            elif obj_name == "t-shirt":
+                self.grid.set(*ObjPos, Tshirt("green"))
+            else:
+                self.grid.set(*ObjPos, Cup("yellow"))
         # Randomize the player start position and orientation
         self.agent_pos = self.place_agent(
             top=(lWallIdx, 0), size=(rWallIdx - lWallIdx, height)
         )
-        # goalPos = lockedRoom.rand_pos(self)
-        # goal_obj = random.choice(["apple", "t-shirt", "cup"])
-        # self.grid.set(*objposlist[goal_obj], Goal())
-        # Generate the mission string
+
         tar_obj = random.choice(["apple", "t-shirt", "cup"])
         self.mission = (
-            "give me something to %s"
+            "get something to %s."
         ) % (OBJFUNC[tar_obj])
         self.target_object = tar_obj
 

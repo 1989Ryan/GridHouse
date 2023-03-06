@@ -29,6 +29,7 @@ ROOM_OBJS = {
 
 
 OBJNAMES = ["apple", "t-shirt", "cup"]
+OBJFUNCLIST = ["eat", "wear", "drink"]
 
 OBJFUNC = {
             "apple": "eat",

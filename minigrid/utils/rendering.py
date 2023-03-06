@@ -83,7 +83,7 @@ def point_in_line(x0, y0, x1, y1, r):
 
 def point_in_half_circle(cx, cy, r):
     def fn(x, y):
-        return ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r ) and  (y <=0.5)
+        return ((x - cx) * (x - cx) + (y - cy) * (y - cy)/1.4 <= r * r ) and  y >=cy
 
     return fn
 

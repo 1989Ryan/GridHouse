@@ -284,9 +284,10 @@ class Apple(WorldObj):
         return True
 
     def render(self, img):
-        fill_coords(img, point_in_circle(0.39, 0.5, 0.2), COLORS[self.color])
-        fill_coords(img, point_in_circle(0.61, 0.5, 0.2), COLORS[self.color])
-        fill_coords(img, point_in_half_circle(0.5, 0.5, 0.31), COLORS[self.color])
+        fill_coords(img, point_in_circle(0.39, 0.4, 0.2), COLORS[self.color])
+        fill_coords(img, point_in_circle(0.61, 0.4, 0.2), COLORS[self.color])
+        fill_coords(img, point_in_half_circle(0.5, 0.4, 0.31), COLORS[self.color])
+        fill_coords(img, point_in_line(0.5, 0.3, 0.55, 0.2, 0.04), COLORS["green"])
 
 class Tshirt(WorldObj):
     def __init__(self, color, contains: WorldObj | None = None):
@@ -300,9 +301,9 @@ class Tshirt(WorldObj):
         c = COLORS[self.color]
 
         # Outline
-        fill_coords(img, point_in_rect(0.12, 0.88, 0.12, 0.88), c)
-        fill_coords(img, point_in_rect(0.12, 0.36, 0.38, 0.88), (0, 0, 0))
-        fill_coords(img, point_in_rect(0.64, 0.88, 0.38, 0.88), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.05, 0.98, 0.12, 0.98), c)
+        fill_coords(img, point_in_rect(0.05, 0.30, 0.38, 0.98), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.70, 0.98, 0.38, 0.98), (0, 0, 0))
         fill_coords(img, point_in_half_circle(0.5, 0.12, 0.1), (0, 0, 0))
 
     def toggle(self, env, pos):
@@ -322,8 +323,8 @@ class Cup(WorldObj):
         c = COLORS[self.color]
 
         # Outline
-        fill_coords(img, point_in_half_circle(0,7, 0.5, 0.2), c)
-        fill_coords(img, point_in_half_circle(0.7, 0.5, 0.1), (0, 0, 0))
+        fill_coords(img, point_in_circle(cx=0.7, cy=0.5, r=0.2), c)
+        fill_coords(img, point_in_circle(0.7, 0.5, 0.1), (0, 0, 0))
         fill_coords(img, point_in_rect(0.30, 0.70, 0.12, 0.88), c)
 
     def toggle(self, env, pos):
