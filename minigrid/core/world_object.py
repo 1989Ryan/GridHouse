@@ -17,6 +17,7 @@ from minigrid.utils.rendering import (
     point_in_line,
     point_in_rect,
     point_in_half_circle,
+    point_in_triangle,
 )
 
 if TYPE_CHECKING:
@@ -287,8 +288,8 @@ class Apple(WorldObj):
         fill_coords(img, point_in_circle(0.39, 0.4, 0.2), COLORS[self.color])
         fill_coords(img, point_in_circle(0.61, 0.4, 0.2), COLORS[self.color])
         fill_coords(img, point_in_half_circle(0.5, 0.4, 0.31), COLORS[self.color])
-        fill_coords(img, point_in_line(0.5, 0.3, 0.55, 0.2, 0.04), COLORS["green"])
 
+        fill_coords(img, point_in_line(0.5, 0.3, 0.55, 0.2, 0.04), COLORS["green"])
 class Tshirt(WorldObj):
     def __init__(self, color, contains: WorldObj | None = None):
         super().__init__("t-shirt", color)
@@ -298,13 +299,20 @@ class Tshirt(WorldObj):
         return True
 
     def render(self, img):
-        c = COLORS[self.color]
+        # c = COLORS[self.color]
 
         # Outline
-        fill_coords(img, point_in_rect(0.05, 0.98, 0.12, 0.98), c)
-        fill_coords(img, point_in_rect(0.05, 0.30, 0.38, 0.98), (0, 0, 0))
-        fill_coords(img, point_in_rect(0.70, 0.98, 0.38, 0.98), (0, 0, 0))
-        fill_coords(img, point_in_half_circle(0.5, 0.12, 0.1), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.2, 0.8, 0.12, 0.95), (205, 205, 205))
+        fill_coords(img, point_in_triangle((0.2, 0.12), (0.05, 0.55), (0.25, 0.6)), (0, 155, 255))
+        # fill_coords(img, point_in_triangle((0.2, 0.12), (0.25, 0.12), (0.25, 0.55)), (0, 155, 255))
+        fill_coords(img, point_in_triangle((0.8, 0.12), (0.95, 0.55), (0.75, 0.6)), (0, 155, 255))
+        # fill_coords(img, point_in_triangle((0.8, 0.12), (0.75, 0.12), (0.75, 0.55)), (0, 155, 255))
+        fill_coords(img, point_in_rect(0.05, 0.23, 0.6, 0.98), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.77, 0.98, 0.6, 0.98), (0, 0, 0))
+        # fill_coords(img, point_in_rect(0.25, 0.75, 0.4, 0.65), (205, 205, 205))
+        fill_coords(img, point_in_half_circle(0.5, 0.06, 0.20), (0, 155, 255))
+        fill_coords(img, point_in_half_circle(0.5, 0.06, 0.15), (0, 0, 0))
+        fill_coords(img, point_in_rect(0.0, 1.0, 0.0, 0.12), (0, 0, 0))
 
     def toggle(self, env, pos):
         # Replace the box by its contents
@@ -323,9 +331,10 @@ class Cup(WorldObj):
         c = COLORS[self.color]
 
         # Outline
-        fill_coords(img, point_in_circle(cx=0.7, cy=0.5, r=0.2), c)
+        fill_coords(img, point_in_circle(cx=0.7, cy=0.5, r=0.2), (255, 255, 255))
         fill_coords(img, point_in_circle(0.7, 0.5, 0.1), (0, 0, 0))
-        fill_coords(img, point_in_rect(0.30, 0.70, 0.12, 0.88), c)
+        fill_coords(img, point_in_rect(0.20, 0.70, 0.12, 0.88), (255, 255, 255))
+        fill_coords(img, point_in_rect(0.27, 0.63, 0.3, 0.78), (0, 205, 255))
 
     def toggle(self, env, pos):
         # Replace the box by its contents

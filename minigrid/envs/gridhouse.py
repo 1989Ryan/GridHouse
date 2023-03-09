@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from minigrid.core.constants import COLOR_NAMES, ROOM_NAMES, \
-    ROOM_NAMES_TO_COLORS, ROOM_OBJS, OBJFUNC, OBJNAMES, OBJFUNCLIST
+    ROOM_NAMES_TO_COLORS, ROOM_OBJS, OBJFUNC, OBJNAMES, OBJFUNCLIST, DIR_TO_VEC
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Door, Goal, Cup, Apple, Tshirt, Wall
@@ -74,7 +74,7 @@ class GridHouseEnv(MiniGridEnv):
     1. The agent reaches the goal.
     2. Timeout (see `max_steps`).
 
-    ## Registered Configurations
+    ## Registered posigurations
 
     - `MiniGrid-LockedRoom-v0`
 
@@ -97,6 +97,7 @@ class GridHouseEnv(MiniGridEnv):
             **kwargs,
         )
         self.target_object = None
+        self.planner = AStar()
 
 
     @staticmethod
@@ -168,7 +169,8 @@ class GridHouseEnv(MiniGridEnv):
                     obj_rooms[obj_name] = self._rand_elem(self.rooms)
                     obj_list.remove(obj_name)
                     continue
-        
+        assert len(obj_rooms.keys()) == 3
+        # print(obj_rooms.keys())
         for obj_name in list(obj_rooms.keys()):
             ObjPos = obj_rooms[obj_name].rand_pos(self)
             if obj_name == "apple":
@@ -187,6 +189,17 @@ class GridHouseEnv(MiniGridEnv):
             "get something to %s."
         ) % (OBJFUNC[tar_obj])
         self.target_object = tar_obj
+
+       
+    def gen_traj(self):
+        room = self._rand_elem(self.rooms)
+        while True:
+            pos = room.rand_pos(self)
+            goal_grid = self.grid.get(*pos)
+            if goal_grid is None or goal_grid.can_overlap():
+                break
+        action = self.planner(self.agent_pos, self.agent_dir, pos, self.grid)
+        return action
 
     def gen_obs(self):
         """
@@ -274,3 +287,121 @@ class GridHouseEnv(MiniGridEnv):
         obs = self.gen_obs()
 
         return obs, reward, terminated, truncated, {}
+
+
+class Node:
+    def __init__(self, came_from, node_type=None, pos=None, cost=None, 
+                 direc=None, action_from=None,
+                 ):
+        if isinstance(action_from , int):
+            action_from = [action_from]
+        self.type = node_type
+        self.pos = pos
+        self.direc = direc
+        self.cost = cost
+        self.came_from = came_from
+        self.action_from = action_from
+        self.neighbor =None
+    def get_neighbor(self, grid: Grid):
+        direc=self.direc
+        fwd_pos = self.front_pos
+        """
+        ## Action Space
+
+        | Num | Name         | Action                    |
+        |-----|--------------|---------------------------|
+        | 0   | left         | Turn left                 |
+        | 1   | right        | Turn right                |
+        | 2   | forward      | Move forward              |
+        | 3   | pickup       | Pick up an object         |
+        | 4   | drop         | Drop an object            |
+        | 5   | toggle       | Open the door             |
+        | 6   | done         | Unused                    |
+        """
+        neighbor = []
+        fwd_cell = grid.get(*fwd_pos)
+        if fwd_cell is None or fwd_cell.can_overlap():
+            neighbor.append(Node(pos = fwd_pos, 
+                                 direc=direc, action_from=[2], came_from=self))
+        elif fwd_cell.type=='door':
+             neighbor.append(Node(pos =fwd_pos, 
+                             direc=direc, came_from=self, action_from=[2, 5],))
+        right_cell = grid.get(*self.get_front_pos(self.pos, (direc+1)%4))
+        if right_cell is None or right_cell.can_overlap():
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc+1)%4), 
+                             direc=(direc+1)%4, came_from=self, action_from=[2, 1]))
+        elif right_cell.type == "door":
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc+1)%4), 
+                             direc=(direc+1)%4, came_from=self, action_from=[2, 5, 1],))
+        left_cell = grid.get(*self.get_front_pos(self.pos, (direc-1)%4))
+        if left_cell is None or left_cell.can_overlap():
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc-1)%4), 
+                             direc=(direc-1)%4, came_from=self, action_from=[2, 0,]))
+        elif left_cell.type == "door":
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc-1)%4), 
+                             direc=(direc-1)%4, came_from=self, action_from=[2, 5, 0],))
+        back_cell = grid.get(*self.get_front_pos(self.pos, (direc-2)%4))
+        if back_cell is None or back_cell.can_overlap():
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc-2)%4), 
+                             direc=(direc-2)%4, came_from=self, action_from=random.choice([[2, 0, 0], [2, 1, 1]])))
+        elif back_cell.type == "door":
+            neighbor.append(Node(node_type = self.type, pos = self.get_front_pos(self.pos, (direc-2)%4), 
+                             direc=(direc-2)%4, came_from=self, action_from=random.choice([[2, 5, 0, 0], [2, 5, 1, 1,]])))
+        return neighbor
+    @property
+    def front_pos(self):
+        return self.get_front_pos(self.pos, self.direc)
+        # return tuple((self.pos + DIR_TO_VEC[self.direc]).tolist())
+    @staticmethod
+    def get_front_pos(pos, direc):
+        return tuple((pos + DIR_TO_VEC[direc]).tolist())
+
+class AStar:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def H(start: Node, goal: Node):
+        # Heuristic function to estimate the cost from start to goal
+        s = np.array(start.pos)
+        g = np.array(goal.pos)
+        return np.sum(np.abs(s-g))
+
+    def _search(self, start: Node, goal: Node, grid: Grid):
+        start.cost = self.H(start, goal)
+        openset = [start]
+        gscore = {start.pos: 0}
+        fscore = {start.pos: start.cost}
+
+        while len(openset) != 0:
+            current = min(set(openset), key=lambda x: fscore[x.pos])
+            if current.pos[0] == goal.pos[0] and current.pos[1] == goal.pos[1]:
+                print("Trajectory found by A-Star!")
+                # If we reach the goal node, reconstruct the path and return it
+                path = []
+                while current.pos[0] != start.pos[0] or current.pos[1] != start.pos[1]\
+                    or current.direc != start.direc:
+                    path = path + current.action_from
+                    current = current.came_from
+                path.reverse()
+                return path
+
+            openset.remove(current)
+            # closedset.append(current)
+            current.neighbor = current.get_neighbor(grid)
+            for neighbor in current.neighbor:
+                neighbor.cost = self.H(neighbor, goal)
+                tentative_gscore = gscore[current.pos] + self.H(neighbor, current)
+                if neighbor.pos not in gscore or tentative_gscore < gscore[neighbor.pos]:
+                    # This path is the best until now. Record it!
+                    gscore[neighbor.pos] = tentative_gscore
+                    fscore[neighbor.pos] = gscore[neighbor.pos] + self.H(neighbor, goal)
+                    if neighbor not in openset:
+                        openset.append(neighbor)
+
+        return None
+
+    def __call__(self, start_pos, start_direc, goal_pos, grid: Grid):
+        start = Node(pos=start_pos, direc=start_direc, came_from=None)
+        goal = Node(pos=goal_pos, direc=start_direc, came_from=None)
+        return self._search(start, goal, grid=grid)
